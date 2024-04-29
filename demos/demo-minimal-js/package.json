@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack",
     "build:gh": "npm ci && cross-env NODE_ENV=production npm run build",
-    "build:prod": "webpack --config webpack.prod.js",
+    "build:prod": "webpack --config webpack.prod.js && npm run build",
     "serve": "webpack serve",
     "start": "webpack serve --open --mode development"
   },
