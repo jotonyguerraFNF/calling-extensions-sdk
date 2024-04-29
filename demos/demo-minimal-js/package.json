@@ -6,8 +6,9 @@
   "scripts": {
     "build": "webpack",
     "build:gh": "npm ci && cross-env NODE_ENV=production npm run build",
+    "build:prod": "webpack --config webpack.prod.js",
     "serve": "webpack serve",
-    "start": "webpack serve --open"
+    "start": "webpack serve --open --mode development"
   },
   "license": "MIT",
   "engines": {

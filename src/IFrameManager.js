@@ -1,8 +1,11 @@
+/* eslint-disable eqeqeq */
+
 "use es6";
 
 import { messageType, debugMessageType, VERSION } from "./Constants";
 
 const prefix = `[calling-extensions-sdk@${VERSION}]`;
+let availabe = false;
 /*
  * IFrameManager abstracts the iFrame communication between the IFrameHost and an IFrame
  * An IFrameManager instance can act as part of the IFrameHost and an IFrame depending on
@@ -26,7 +29,8 @@ class IFrameManager {
     this.instanceId = Date.now();
     this.instanceRegexp = new RegExp(`^${this.instanceId}`);
     this.isReady = false;
-
+    this.state = "Stale";
+    this.onDisconnect = "Stale";
     this.messageHandler = event => this.onMessage(event);
     window.addEventListener("message", this.messageHandler);
 
@@ -77,7 +81,9 @@ class IFrameManager {
   }
 
   static createIFrame(iFrameOptions, onLoadCallback) {
-    const { src, width, height, hostElementSelector } = iFrameOptions;
+    const {
+      src, width, height, hostElementSelector,
+    } = iFrameOptions;
 
     if (!src || !width || !height || !hostElementSelector) {
       throw new Error(
@@ -172,7 +178,6 @@ class IFrameManager {
     const newMessage = Object.assign({}, message, {
       messageId,
     });
-
     this.logDebugMessage(prefix, debugMessageType.TO_HUBSPOT, type, message);
     this.destinationWindow.postMessage(newMessage, this.destinationHost);
   }
@@ -202,7 +207,67 @@ class IFrameManager {
     }
 
     if (this.destinationHost !== origin) {
-      // Ignore messages from an unknown origin
+      let obj = {};
+      // console.log("ORIGIN = ", origin);
+      if (typeof (data) === "string") obj = JSON.parse(data);
+      console.log(obj);
+
+      if (obj.type == "processCallLog") {
+        console.log("PROCESSING CALL LOG");
+        if (obj.data.interactionId.isDone == true) {
+          console.log("call is done! Clicking complete call and attaching data");
+          if (this.status == "CONNECTED") {
+            console.log("CALL WAS CONNECTED");
+            window.document.querySelector("#completecall").click();
+          } else {
+            console.log("CALL never Connected");
+          }
+          // data = {}
+        }
+
+      }
+      if (obj.type == "interactionSubscription") {
+        if (obj.data.category == "change") {
+
+          if (obj.data.interaction.old.state == "DIALING" && obj.data.interaction.new.state == "DIALING") {
+            console.log("STILL Dialing");
+            this.status = "Dialing";
+          }
+          if (obj.data.interaction.old.state == "DIALING" && obj.data.interaction.new.state == "CONNECTED") {
+            console.log("CONNECTED");
+            this.status = "CONNECTED";
+          }
+        }
+        if (obj.data.interaction.state == "CONTACTING") {
+          console.log("CONTACTING: ", obj.data);
+          window.document.querySelector("#outgoingcall").click();
+        } else if (obj.data.interaction.state == "DISCONNECTED") {
+          console.log("DISCONNECTED: ", obj.data);
+          console.log(this.status);
+          window.document.querySelector("#endcall").click();
+        }
+      }
+      if (obj.type == "userActionSubscription") {
+        if (obj.data.category == "view") {
+          if (obj.data.data == "Dialpad") {
+            console.log("VIEWING DIAL PADD!");
+            if (availabe) {
+              console.log("user is available and dialpad is being viewed. ready to dial");
+              // window.document.querySelector("#clickToDial").click();
+              // console.log("Clicked the click to Dial should be dialing");
+            }
+          }
+        }
+        if (obj.data.category == "status") {
+
+          if (obj.data.data.status == "AVAILABLE") {
+            console.log("AVAILABLEEEE");
+            availabe = true;
+          }
+        }
+
+      }
+
       return;
     }
 

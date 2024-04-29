@@ -17,11 +17,12 @@
     integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
     crossorigin="anonymous"></script>
   <script defer src="demo-minimal-js.bundle.js"></script>
+  <!-- <script src="framework.js"></script> -->
   <title>Demo Widget JS</title>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description"
-    content="This app features a minimal implementation of the Calling Extensions SDK using JavaScript, HTML, and CSS." />
+    content="Genesys dies when attempting to add Calling-SDK features to framework..... This app features a minimal implementation of the Calling Extensions SDK using JavaScript, HTML, and CSS." />
 
   <style>
     body {
@@ -139,38 +140,33 @@
   <main>
     <header>
       <p class="instructions">
-        Click the buttons to send messages to HubSpot via the Calling
-        Extensions SDK. Open your console to see the <a
-          href="https://developers.hubspot.com/docs/api/crm/extensions/receive-calls-in-hubspot-when-using-calling-apps"
-          target="_blank" rel="noreferrer">incoming (beta)</a> and outgoing
-        messages with HubSpot.
       </p>
     </header>
-    <div class="softphone">
-        <iframe allow="camera *; microphone *; autoplay *; hid *" height="500"src="https://apps.usw2.pure.cloud/crm/index.html?&crm=embeddableframework"></iframe>
+    <div class="action">
+      <p>Click-to-Dial<a id='clickToDial'> 3172222222</a></p>
     </div>
-    <section id="events">
-      <p>1. Initialize the calling app</p>
-      <input id="initialize" onclick="initialize()" type="button" value="initialized" />
-      <p>2. Log in to the app</p>
-      <input disabled id="login" onclick="logIn()" type="button" value="log in" />
-      <input disabled id="logout" onclick="logOut()" type="button" value="log out" />
-      <p>3. Set inbound calling availability</p>
-      <button disabled id="useravailable" onclick="userAvailable()" type="button"><span>available</span><span
-          class="beta-badge">BETA</span></button>
-      <button disabled id="userunavailable" onclick="userUnavailable()" type="button"><span>unavailable</span><span
-          class="beta-badge">BETA</span></button>
-      <p>4. Start a call</p>
-      <button disabled id="incomingcall" onclick="incomingCall()" type="button"><span>incoming call started</span><span
-          class="beta-badge">BETA</span></button>
-      <input disabled id="outgoingcall" onclick="outgoingCall()" type="button" value="outgoing call started" />
-      <input disabled id="answercall" onclick="answerCall()" type="button" value="call answered" />
-      <p>5. End a call</p>
-      <input disabled id="endcall" onclick="endCall()" type="button" value="call ended" />
-      <input disabled id="completecall" onclick="completeCall()" type="button" value="call completed" />
-      <p class="other-events">Other events</p>
-      <input disabled id="senderror" onclick="sendError()" type="button" value="send error" />
-      <input disabled id="resizewidget" onclick="resizeWidget()" type="button" value="resize widget" />
+    <div class="softphone">                                                                       
+        <iframe id="softphone" allow="camera *; microphone *; autoplay *; hid *" height="470" src="https://apps.usw2.pure.cloud/crm/index.html?crm=framework-local-secure"></iframe>
+    </div>
+    <section id="events" style="opacity: 0;">
+      <input
+          id="outgoingcall"
+          onclick="outgoingCall()"
+          type="button"
+          value="outgoing call started"
+      />
+      <input
+          id="endcall"
+          onclick="endCall()"
+          type="button"
+          value="call ended"
+        />
+        <input
+          id="completecall"
+          onclick="completeCall()"
+          type="button"
+          value="call completed"
+        />
     </section>
   </main>
   <!-- Testing -->

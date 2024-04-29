@@ -1,8 +1,8 @@
+/* eslint-disable eqeqeq */
 /* eslint-disable import/no-relative-packages */
 import CallingExtensions from "../../src/CallingExtensions";
 import { messageType, callEndStatus } from "../../src/Constants";
 // import CallingExtensions, { Constants } from "@hubspot/calling-extensions-sdk";
-// const { messageType, callEndStatus } = Constants;
 
 export const state = {
   engagementId: 0,
@@ -17,33 +17,33 @@ const sizeInfo = {
   height: 650,
 };
 
-/** Button IDs */
-const ANSWER_CALL = "answercall";
-const COMPLETE_CALL = "completecall";
-const END_CALL = "endcall";
-const INCOMING_CALL = "incomingcall";
-const INITIALIZE = "initialize";
-const LOG_IN = "login";
-const LOG_OUT = "logout";
-const OUTGOING_CALL = "outgoingcall";
-const RESIZE_WIDGET = "resizewidget";
-const SEND_ERROR = "senderror";
-const USER_AVAILABLE = "useravailable";
-const USER_UNAVAILABLE = "userunavailable";
-
-function disableButtons(ids) {
-  ids.forEach(id => {
-    document.querySelector(`#${id}`).setAttribute("disabled", true);
-  });
+function updateDomPhone(number) {
+  document.getElementById("clickToDial").innerHTML = number;
 }
 
-function enableButtons(ids) {
-  ids.forEach(id => {
-    document.querySelector(`#${id}`).removeAttribute("disabled");
-  });
+function clickDialData(number) {
+  document.getElementById("softphone").contentWindow.postMessage(JSON.stringify({
+    type: "clickToDial",
+    data: { number, autoPlace: true },
+  }), "*");
 }
 
-const cti = new CallingExtensions({
+function clickToDial(number) {
+  console.log("CLICK TO DIAL FUNCTION");
+  setTimeout(clickDialData(number), 600);
+}
+
+export function outgoingCall(number) {
+  window.setTimeout(() => {
+    // eslint-disable-next-line no-use-before-define
+    cti.outgoingCall({
+      createEngagement: true,
+      phoneNumber: number,
+    });
+  }, 100);
+}
+
+export const cti = new CallingExtensions({
   debugMode: true,
   eventHandlers: {
     onReady: data => {
@@ -52,16 +52,16 @@ const cti = new CallingExtensions({
         sizeInfo,
         engagementId: data.engagementId,
       });
-      disableButtons([INITIALIZE]);
       if (data.engagementId) {
-        enableButtons([ANSWER_CALL, END_CALL]);
-        return;
+        console.log("EngagemendId =", data.engagementId);
       }
-      enableButtons([LOG_IN, SEND_ERROR, RESIZE_WIDGET]);
     },
     onDialNumber: (data, rawEvent) => {
       const { phoneNumber } = data;
       state.toNumber = phoneNumber;
+      updateDomPhone(phoneNumber);
+      clickToDial(phoneNumber);
+      // need to pass dialNumber to Genesys
     },
     onEngagementCreated: (data, rawEvent) => {
       const { engagementId } = data;
@@ -71,8 +71,14 @@ const cti = new CallingExtensions({
       window.setTimeout(() => {
         cti.callEnded();
       }, 500);
+
     },
     onVisibilityChanged: (data, rawEvent) => {
+      if (!data.isHidden && !data.isMinimized) {
+        console.log("VISIBILITY CHANGED! SHOWING");
+        console.log(data);
+        setTimeout(console.log("waited"), 400);
+      }
       /** The cti's visibility has changed. */
     },
     onCreateEngagementSucceeded: (data, rawEvent) => {
@@ -119,6 +125,8 @@ const cti = new CallingExtensions({
       });
     },
     onNavigateToRecordFailed: (data, rawEvent) => {
+      console.log(data);
+      console.log(rawEvent);
       /** HubSpot was unable to navigate to the desired record page. */
     },
   },
@@ -128,50 +136,30 @@ export function initialize() {
   cti.initialized({
     isLoggedIn: false,
   });
-  disableButtons([INITIALIZE]);
-  enableButtons([LOG_IN, SEND_ERROR, RESIZE_WIDGET]);
 }
 
 export function logIn() {
   cti.userLoggedIn();
-  disableButtons([LOG_IN, INITIALIZE]);
-  enableButtons([LOG_OUT, OUTGOING_CALL]);
   if (state.userAvailable) {
-    disableButtons([USER_AVAILABLE]);
-    enableButtons([INCOMING_CALL, USER_UNAVAILABLE]);
+    console.log("User is available");
   } else {
-    disableButtons([INCOMING_CALL, USER_UNAVAILABLE]);
-    enableButtons([USER_AVAILABLE]);
+    // disableButtons([INCOMING_CALL, USER_UNAVAILABLE]);
+    // enableButtons([USER_AVAILABLE]);
   }
 }
 
 export function logOut() {
   cti.userLoggedOut();
-  disableButtons([
-    LOG_OUT,
-    OUTGOING_CALL,
-    INCOMING_CALL,
-    ANSWER_CALL,
-    END_CALL,
-    COMPLETE_CALL,
-    USER_AVAILABLE,
-    USER_UNAVAILABLE,
-  ]);
-  enableButtons([LOG_IN]);
 }
 
 export function userAvailable() {
   cti.userAvailable();
   state.userAvailable = true;
-  disableButtons([USER_AVAILABLE]);
-  enableButtons([INCOMING_CALL, USER_UNAVAILABLE]);
 }
 
 export function userUnavailable() {
   cti.userUnavailable();
   state.userAvailable = false;
-  disableButtons([INCOMING_CALL, USER_UNAVAILABLE]);
-  enableButtons([USER_AVAILABLE]);
 }
 
 export function incomingCall() {
@@ -182,51 +170,42 @@ export function incomingCall() {
       toNumber: state.toNumber,
     });
   }, 500);
-  disableButtons([OUTGOING_CALL, INCOMING_CALL, USER_UNAVAILABLE]);
-  enableButtons([ANSWER_CALL, END_CALL]);
-}
-
-export function outgoingCall() {
-  window.setTimeout(() => {
-    cti.outgoingCall({
-      createEngagement: true,
-      phoneNumber: state.toNumber,
-    });
-  }, 500);
-  disableButtons([OUTGOING_CALL, INCOMING_CALL, USER_UNAVAILABLE]);
-  enableButtons([ANSWER_CALL, END_CALL]);
 }
 
 export function answerCall() {
   cti.callAnswered();
-  disableButtons([ANSWER_CALL]);
 }
 
 export function endCall() {
   cti.callEnded({
     callEndStatus: callEndStatus.INTERNAL_COMPLETED,
   });
-  disableButtons([ANSWER_CALL, END_CALL]);
-  enableButtons([COMPLETE_CALL]);
 }
 
-export function completeCall() {
+export function completeCall(data) {
+  if (!data || data == {}) {
+    data = {
+      hs_call_title: "Renewal call",
+      hs_call_body: "No Call Data Found",
+      hs_call_status: "COMPLETED",
+      hs_call_disposition: "f240bbac-87c9-4f6e-bf70-924b57d47db7",
+    };
+  }
+  console.log(this);
+  console.log(data);
   cti.callCompleted({
     engagementId: state.engagementId,
     hideWidget: false,
-    engagementProperties: {
-      hs_call_title: "Demo call",
-      hs_call_body: "Resolved issue",
-    },
+    engagementProperties: data,
   });
-  disableButtons([COMPLETE_CALL]);
-  enableButtons([OUTGOING_CALL, INCOMING_CALL, USER_UNAVAILABLE]);
+  // disableButtons([COMPLETE_CALL]);
+  // enableButtons([OUTGOING_CALL, INCOMING_CALL, USER_UNAVAILABLE]);
 }
 
-export function sendError() {
+export function sendError(message) {
   cti.sendError({
     type: messageType.ERROR,
-    message: "This is an error alert shown in the Hubspot UI",
+    message,
   });
 }
 
@@ -238,3 +217,17 @@ export function resizeWidget() {
     height: sizeInfo.height,
   });
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+
+  // eslint-disable-next-line no-use-before-define
+  document.getElementById("clickToDial").addEventListener("click", clickToDialDirect);
+
+  function clickToDialDirect(number) {
+    number = number.target.innerHTML;
+    document.getElementById("softphone").contentWindow.postMessage(JSON.stringify({
+      type: "clickToDial",
+      data: { number, autoPlace: true },
+    }), "*");
+  }
+});
